@@ -1,0 +1,33 @@
+{
+  "name": "high-performance-image-processor",
+  "version": "1.0.1",
+  "description": "A high-performance image processing pipeline using Node.js Streams, Worker Threads, and C++ Addons",
+  "main": "index.js",
+  "scripts": {
+    "build": "node-gyp rebuild",
+    "start": "node index.js",
+    "test": "node test/test.js",
+    "install": "node-gyp rebuild"
+  },
+  "keywords": [
+    "image-processing",
+    "streams",
+    "worker-threads",
+    "cpp-addons",
+    "nodejs"
+  ],
+  "author": "Daniel Nofulla",
+  "license": "MIT",
+  "dependencies": {
+    "sharp": "^0.32.6",
+    "yargs": "^17.7.2",
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^10.0.1"
+  },
+  "gypfile": true,
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

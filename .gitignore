@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+
+# Test input and output
+test/input/
+test/output/
+
+# C++ addon compiled files
+*.node
+*.pdb
+*.iobj
+*.ipdb
+*.lib
+*.exp
