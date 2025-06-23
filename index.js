@@ -39,15 +39,12 @@ class ImageProcessor {
       `Processing ${this.totalJobs} images with ${this.workerCount} workers...`
     );
 
-    // Queue all images for processing
     this.pendingQueue = [...imageFiles];
 
-    // Start processing with all workers
     const workerPromises = this.workers.map((worker, index) =>
       this.processWorkerQueue(worker, index, outputDir)
     );
 
-    // Wait for all workers to complete
     await Promise.all(workerPromises);
 
     this.isProcessing = false;

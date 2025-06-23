@@ -2,16 +2,13 @@ const { parentPort, workerData } = require("worker_threads");
 const fs = require("fs").promises;
 const path = require("path");
 
-// Import the C++ addon
 let imageProcessor;
 try {
   imageProcessor = require("./build/Release/image_processor");
 } catch (error) {
-  // Fallback to Sharp if C++ addon is not available
   console.warn("C++ addon not available, falling back to Sharp");
   const sharp = require("sharp");
 
-  // Create a Sharp-based fallback that mimics our C++ addon interface
   imageProcessor = {
     processImage: async (buffer, maxWidth, maxHeight) => {
       try {
@@ -41,27 +38,22 @@ class ImageWorker {
 
   async processImage(imageData) {
     try {
-      // Read the image file
       const inputBuffer = await fs.readFile(imageData.inputPath);
 
       let processedBuffer;
 
       if (imageProcessor.processImage.toString().includes("Sharp")) {
-        // Using Sharp fallback
         processedBuffer = await imageProcessor.processImage(
           inputBuffer,
           this.maxWidth,
           this.maxHeight
         );
       } else {
-        // Using C++ addon - decode with Sharp first, then use C++ for processing
         const sharp = require("sharp");
 
-        // Decode the input image to raw RGB data using Sharp
         const metadata = await sharp(inputBuffer).metadata();
         const rawInputData = await sharp(inputBuffer).raw().toBuffer();
 
-        // Create a simple header + raw data format for C++ addon
         const headerBuffer = Buffer.alloc(12);
         headerBuffer.writeInt32BE(metadata.width, 0);
         headerBuffer.writeInt32BE(metadata.height, 4);
@@ -69,19 +61,16 @@ class ImageWorker {
 
         const inputForCpp = Buffer.concat([headerBuffer, rawInputData]);
 
-        // Process with C++ addon
         const rawBuffer = await imageProcessor.processImage(
           inputForCpp,
           this.maxWidth,
           this.maxHeight
         );
 
-        // Parse the custom format from C++ addon
         if (rawBuffer.length < 12) {
           throw new Error("Invalid processed data from C++ addon");
         }
 
-        // Read header: width (4 bytes), height (4 bytes), channels (4 bytes)
         const width =
           (rawBuffer[0] << 24) |
           (rawBuffer[1] << 16) |
@@ -98,10 +87,8 @@ class ImageWorker {
           (rawBuffer[10] << 8) |
           rawBuffer[11];
 
-        // Extract raw image data
         const imageData = rawBuffer.slice(12);
 
-        // Convert to proper JPEG using Sharp
         processedBuffer = await sharp(imageData, {
           raw: {
             width: width,
@@ -113,7 +100,6 @@ class ImageWorker {
           .toBuffer();
       }
 
-      // Write the processed image
       await fs.writeFile(imageData.outputPath, processedBuffer);
 
       this.processedCount++;
@@ -141,13 +127,11 @@ class ImageWorker {
   }
 }
 
-// Worker main logic
 async function main() {
   const worker = new ImageWorker(
     workerData || { maxWidth: 800, maxHeight: 600 }
   );
 
-  // Listen for messages from the main thread
   parentPort.on("message", async (imageData) => {
     try {
       const result = await worker.processImage(imageData);
@@ -162,7 +146,6 @@ async function main() {
     }
   });
 
-  // Handle worker shutdown
   parentPort.on("close", () => {
     console.log(
       `Worker shutting down after processing ${worker.processedCount} images`
@@ -171,7 +154,6 @@ async function main() {
   });
 }
 
-// Error handling
 process.on("uncaughtException", (error) => {
   console.error("Worker uncaught exception:", error);
   parentPort.postMessage({
@@ -189,7 +171,6 @@ process.on("unhandledRejection", (reason, promise) => {
   });
 });
 
-// Start the worker
 main().catch((error) => {
   console.error("Worker initialization failed:", error);
   process.exit(1);

@@ -3,50 +3,31 @@ const path = require("path");
 const sharp = require("sharp");
 const { ImageProcessor } = require("../index");
 
-// Create a simple test image buffer (2x2 RGB image)
 function createTestImageBuffer() {
   const width = 2;
   const height = 2;
   const channels = 3;
 
-  // Create header
   const header = Buffer.alloc(12);
   header.writeInt32BE(width, 0);
   header.writeInt32BE(height, 4);
   header.writeInt32BE(channels, 8);
 
-  // Create image data (2x2 RGB pixels)
-  const imageData = Buffer.from([
-    255,
-    0,
-    0, // Red pixel
-    0,
-    255,
-    0, // Green pixel
-    0,
-    0,
-    255, // Blue pixel
-    255,
-    255,
-    0, // Yellow pixel
-  ]);
+  const imageData = Buffer.from([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0]);
 
   return Buffer.concat([header, imageData]);
 }
 
-// Create a more realistic test image (64x64 gradient)
 function createGradientImageBuffer() {
   const width = 64;
   const height = 64;
   const channels = 3;
 
-  // Create header
   const header = Buffer.alloc(12);
   header.writeInt32BE(width, 0);
   header.writeInt32BE(height, 4);
   header.writeInt32BE(channels, 8);
 
-  // Create gradient image data
   const imageData = Buffer.alloc(width * height * channels);
   let offset = 0;
 
@@ -65,7 +46,6 @@ function createGradientImageBuffer() {
   return Buffer.concat([header, imageData]);
 }
 
-// Create real test images using Sharp
 async function createSharpTestImages(testDir) {
   const images = [
     {
@@ -79,9 +59,9 @@ async function createSharpTestImages(testDir) {
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
             const intensity = Math.floor((x / width) * 255);
-            data[offset++] = intensity; // R
-            data[offset++] = 0; // G
-            data[offset++] = 0; // B
+            data[offset++] = intensity;
+            data[offset++] = 0;
+            data[offset++] = 0;
           }
         }
 
@@ -102,9 +82,9 @@ async function createSharpTestImages(testDir) {
           for (let x = 0; x < width; x++) {
             const checker = (Math.floor(x / 20) + Math.floor(y / 20)) % 2 === 0;
             const blue = checker ? 255 : 100;
-            data[offset++] = 0; // R
-            data[offset++] = 0; // G
-            data[offset++] = blue; // B
+            data[offset++] = 0;
+            data[offset++] = 0;
+            data[offset++] = blue;
           }
         }
 
@@ -155,7 +135,6 @@ async function runTests() {
   console.log("Running Image Processing Pipeline Tests\n");
 
   try {
-    // Create test directories
     const testInputDir = path.join(__dirname, "input");
     const testOutputDir = path.join(__dirname, "output");
 
@@ -164,10 +143,8 @@ async function runTests() {
 
     console.log("Created test directories");
 
-    // Create test images using Sharp
     await createSharpTestImages(testInputDir);
 
-    // Test the processing pipeline
     console.log("\nStarting image processing pipeline...\n");
 
     const processor = new ImageProcessor(3);
@@ -181,12 +158,10 @@ async function runTests() {
     await processor.processImageQueue(imageFiles, testOutputDir);
     await processor.cleanup();
 
-    // Verify output files
     const outputFiles = await fs.readdir(testOutputDir);
     console.log(`\nTest completed successfully!`);
     console.log(`Output files: ${outputFiles.join(", ")}`);
 
-    // Display file sizes and show what the processing actually does
     console.log(`\nProcessing Results:`);
     console.log(`   What the pipeline does: RESIZE + GRAYSCALE + COMPRESS`);
 
@@ -218,7 +193,6 @@ async function runTests() {
   }
 }
 
-// Main test execution
 async function main() {
   console.log("High-Performance Image Processing Pipeline - Test Suite\n");
 

@@ -16,7 +16,6 @@ struct ImageData {
   int channels;
 };
 
-// Simple bilinear interpolation for image resizing
 uint8_t bilinearInterpolate(const std::vector<uint8_t> &data, int width,
                             int height, int channels, float x, float y,
                             int channel) {
@@ -42,7 +41,6 @@ uint8_t bilinearInterpolate(const std::vector<uint8_t> &data, int width,
   return static_cast<uint8_t>(top * (1 - dy) + bottom * dy);
 }
 
-// Resize image using bilinear interpolation
 ImageData resizeImage(const ImageData &input, int newWidth, int newHeight) {
   ImageData output;
   output.width = newWidth;
@@ -70,26 +68,22 @@ ImageData resizeImage(const ImageData &input, int newWidth, int newHeight) {
   return output;
 }
 
-// Convert image to grayscale
 ImageData convertToGrayscale(const ImageData &input) {
   ImageData output;
   output.width = input.width;
   output.height = input.height;
-  output.channels = 1; // Grayscale has 1 channel
+  output.channels = 1;
   output.data.resize(input.width * input.height);
 
   for (int i = 0; i < input.width * input.height; i++) {
     if (input.channels >= 3) {
-      // RGB to grayscale using standard luminance formula
       uint8_t r = input.data[i * input.channels];
       uint8_t g = input.data[i * input.channels + 1];
       uint8_t b = input.data[i * input.channels + 2];
 
-      // Weighted average: 0.299*R + 0.587*G + 0.114*B
       uint8_t gray = static_cast<uint8_t>(0.299f * r + 0.587f * g + 0.114f * b);
       output.data[i] = gray;
     } else {
-      // Already grayscale or single channel
       output.data[i] = input.data[i * input.channels];
     }
   }
@@ -97,14 +91,9 @@ ImageData convertToGrayscale(const ImageData &input) {
   return output;
 }
 
-// Simple JPEG-like encoding (simplified for demonstration)
 std::vector<uint8_t> encodeAsJPEG(const ImageData &image) {
-  // This is a simplified encoding - in reality, you'd use a proper JPEG library
-  // For this demo, we'll create a simple format with a header and raw data
-
   std::vector<uint8_t> encoded;
 
-  // Simple header: width (4 bytes), height (4 bytes), channels (4 bytes)
   auto writeInt = [&encoded](int value) {
     encoded.push_back((value >> 24) & 0xFF);
     encoded.push_back((value >> 16) & 0xFF);
@@ -116,7 +105,6 @@ std::vector<uint8_t> encodeAsJPEG(const ImageData &image) {
   writeInt(image.height);
   writeInt(image.channels);
 
-  // Add the image data
   for (const auto &byte : image.data) {
     encoded.push_back(byte);
   }
@@ -124,8 +112,6 @@ std::vector<uint8_t> encodeAsJPEG(const ImageData &image) {
   return encoded;
 }
 
-// Parse simple image format (for demonstration - normally you'd use a proper
-// image library)
 ImageData parseSimpleImage(const uint8_t *data, size_t size) {
   ImageData image;
 
@@ -133,7 +119,6 @@ ImageData parseSimpleImage(const uint8_t *data, size_t size) {
     throw std::runtime_error("Invalid image data: too small");
   }
 
-  // Read header
   auto readInt = [](const uint8_t *data, size_t offset) -> int {
     return (data[offset] << 24) | (data[offset + 1] << 16) |
            (data[offset + 2] << 8) | data[offset + 3];
@@ -143,13 +128,10 @@ ImageData parseSimpleImage(const uint8_t *data, size_t size) {
   image.height = readInt(data, 4);
   image.channels = readInt(data, 8);
 
-  // Basic validation
   if (image.width <= 0 || image.height <= 0 || image.channels <= 0 ||
       image.channels > 4) {
-    // Try to interpret as raw image data with assumed dimensions
-    // This is a fallback for when we receive actual image files
-    image.width = 100; // Default assumption
-    image.height = static_cast<int>(size / (image.width * 3)); // Assume RGB
+    image.width = 100;
+    image.height = static_cast<int>(size / (image.width * 3));
     image.channels = 3;
 
     if (image.height <= 0) {
@@ -160,17 +142,14 @@ ImageData parseSimpleImage(const uint8_t *data, size_t size) {
 
   size_t expectedSize = 12 + image.width * image.height * image.channels;
   if (size >= expectedSize) {
-    // Read image data from after header
     image.data.assign(data + 12, data + expectedSize);
   } else {
-    // Use all available data as image data (fallback)
     image.data.assign(data, data + size);
   }
 
   return image;
 }
 
-// Main processing function
 Napi::Value ProcessImage(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
@@ -194,16 +173,13 @@ Napi::Value ProcessImage(const Napi::CallbackInfo &info) {
   }
 
   try {
-    // Get input data
     Napi::Buffer<uint8_t> inputBuffer = info[0].As<Napi::Buffer<uint8_t>>();
     int maxWidth = info[1].As<Napi::Number>().Int32Value();
     int maxHeight = info[2].As<Napi::Number>().Int32Value();
 
-    // Parse the input image
     ImageData inputImage =
         parseSimpleImage(inputBuffer.Data(), inputBuffer.Length());
 
-    // Calculate new dimensions maintaining aspect ratio
     float aspectRatio =
         static_cast<float>(inputImage.width) / inputImage.height;
     int newWidth = inputImage.width;
@@ -219,19 +195,15 @@ Napi::Value ProcessImage(const Napi::CallbackInfo &info) {
       newWidth = static_cast<int>(maxHeight * aspectRatio);
     }
 
-    // Resize if necessary
     ImageData resizedImage = inputImage;
     if (newWidth != inputImage.width || newHeight != inputImage.height) {
       resizedImage = resizeImage(inputImage, newWidth, newHeight);
     }
 
-    // Convert to grayscale
     ImageData grayscaleImage = convertToGrayscale(resizedImage);
 
-    // Encode the result
     std::vector<uint8_t> encoded = encodeAsJPEG(grayscaleImage);
 
-    // Return as Node.js Buffer
     return Napi::Buffer<uint8_t>::Copy(env, encoded.data(), encoded.size());
 
   } catch (const std::exception &e) {
@@ -243,17 +215,14 @@ Napi::Value ProcessImage(const Napi::CallbackInfo &info) {
 
 } // namespace ImageProcessor
 
-// Initialize the addon with proper signature for NAPI_MODULE
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "processImage"),
               Napi::Function::New(env, ImageProcessor::ProcessImage));
   return exports;
 }
 
-// C-style wrapper function for NAPI_MODULE
 napi_value init_module(napi_env env, napi_value exports) {
   return Init(Napi::Env(env), Napi::Object(env, exports));
 }
 
-// Use NAPI_MODULE with C-style function signature
 NAPI_MODULE(NODE_GYP_MODULE_NAME, init_module);
