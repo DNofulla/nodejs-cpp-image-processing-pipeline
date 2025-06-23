@@ -74,4 +74,4 @@ If the C++ addon fails to build or load, the system automatically falls back to 
 
 ## License
 
-MIT 
+MIT License
